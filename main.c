@@ -96,9 +96,9 @@ int main(int argc, char *argv[])
 
 SDL_Window *init(char *title, int width, int height)
 {
+	int SDL_Flags = SDL_INIT_VIDEO | SDL_INIT_EVENTS;
 	
-	
-	if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
+	if(SDL_Init(SDL_Flags) < 0)
 	{
 		fprintf(stderr, "SDL failed to initialise, %s", SDL_GetError());
 		return NULL;
