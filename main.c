@@ -22,7 +22,7 @@ SDL_Window *init(char *title, int width, int height);
 SDL_Renderer *createRenderer(SDL_Window *screen);
 void handleInput(SDL_Rect *player, SDL_Event e, int *end);
 TTF_Font *loadFont(char *filename, int fontSize, SDL_Renderer *render);
-SDL_Texture *renderScore(TTF_Font *font, SDL_Color colour, SDL_Rect *size, SDL_Renderer *render, int score);
+SDL_Texture *renderScore(TTF_Font *font, SDL_Color colour, SDL_Rect *size, SDL_Renderer *render, int score, SDL_Texture *scoreDisplay);
 int main(int argc, char *argv[])
 {
 	srand(time(NULL));
@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 	SDL_Color cPoint = {255,255,0,255};
 	SDL_Color cBackground = {0,0,0,255};
 	SDL_Color cScore = {0,255,0,255};
-	int runningGame,gotPoint, pointCount;
+	int runningGame,gotPoint, pointCount, oldScore;
 	runningGame = 0;
 	gotPoint = 0;
 	pointCount = -1;//first point spawns on player
@@ -47,13 +47,14 @@ int main(int argc, char *argv[])
 	defaultText = loadFont("default.ttf", 15, renderPrim);
 	while(runningGame == 0)
 	{
-	if(gotPoint == 1)
-	{
-		pointCount++;
-		rPoint.x = rand() % SCREEN_WIDTH;//new random position
-		rPoint.y = rand() % SCREEN_HEIGHT;
-		gotPoint = 0;
-	}
+		oldScore = pointCount;
+		if(gotPoint == 1)
+		{
+			pointCount++;
+			rPoint.x = rand() % SCREEN_WIDTH;//new random position
+			rPoint.y = rand() % SCREEN_HEIGHT;
+			gotPoint = 0;
+		}
 		while(SDL_PollEvent(&eventHandle) != 0)
 		{
 			if(eventHandle.type == SDL_KEYDOWN)
@@ -69,14 +70,17 @@ int main(int argc, char *argv[])
 		
 		
 		}
-		SDL_DestroyTexture(scoreDisplay);//stops memory overflow
+		
 		SDL_SetRenderDrawColor(renderPrim, cBackground.r,cBackground.g,cBackground.b,cBackground.a);
 		SDL_RenderClear(renderPrim);
 		SDL_SetRenderDrawColor(renderPrim,cPlayer.r,cPlayer.g,cPlayer.b,cPlayer.a);
 		SDL_RenderFillRect(renderPrim,&rPlayer);
 		SDL_SetRenderDrawColor(renderPrim,cPoint.r,cPoint.g,cPoint.b,cPoint.a);
 		SDL_RenderFillRect(renderPrim,&rPoint);
-		scoreDisplay = renderScore(defaultText,cScore,&rScore, renderPrim, pointCount);
+		if(oldScore < pointCount)
+		{
+			scoreDisplay = renderScore(defaultText,cScore,&rScore, renderPrim, pointCount, scoreDisplay);
+		}
 		SDL_RenderCopy(renderPrim, scoreDisplay, NULL, &rScore); 
 		SDL_RenderPresent(renderPrim);
 		
@@ -117,7 +121,7 @@ SDL_Window *init(char *title, int width, int height)
 }
 SDL_Renderer *createRenderer(SDL_Window *screen)
 {
-	SDL_Renderer *temp = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED);
+	SDL_Renderer *temp = SDL_CreateRenderer(screen, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if(!temp)
 	{
 		fprintf(stderr, "Renderer failed to initialise : %s", SDL_GetError());
@@ -182,8 +186,9 @@ TTF_Font *loadFont(char *filename, int fontSize, SDL_Renderer *render)
 	return temp;
 }
 
-SDL_Texture *renderScore(TTF_Font *font, SDL_Color colour, SDL_Rect *size, SDL_Renderer *render, int score)
+SDL_Texture *renderScore(TTF_Font *font, SDL_Color colour, SDL_Rect *size, SDL_Renderer *render, int score, SDL_Texture *scoreDisplay)
 {
+	SDL_DestroyTexture(scoreDisplay);
 	SDL_Surface *temp;
 	SDL_Texture *tempTex;
 	char text[100];
